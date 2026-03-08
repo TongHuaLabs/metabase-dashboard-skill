@@ -14,7 +14,7 @@ When you invoke this skill, Claude will guide you through a structured workflow:
 
 ## Requirements
 
-- [Claude Code](https://claude.ai/code) with the [Metabase MCP server](https://github.com/metabase/metabase-mcp) configured
+- [Claude Code](https://claude.ai/code) with the [Metabase MCP server](https://github.com/CognitionAI/metabase-mcp-server) configured
 - A running Metabase instance
 
 ## Installation
