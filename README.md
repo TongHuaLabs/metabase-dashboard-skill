@@ -19,13 +19,28 @@ When you invoke this skill, Claude will guide you through a structured workflow:
 
 ## Installation
 
-Install via Claude Code:
+### Option A — Via Claude Code plugin system
+
+Add this repo as a marketplace, then install the skill:
 
 ```
-/plugins install metabase-dashboard-skill
+/plugin marketplace add TongHuaLabs/metabase-dashboard-skill
+/plugin install metabase-dashboard@metabase-dashboard-skill
 ```
 
-Or copy `SKILL.md` and the `references/` folder into your project's `.claude/skills/metabase-dashboard/` directory.
+### Option B — Manual
+
+Copy the skill files into your project:
+
+```bash
+mkdir -p .claude/skills/metabase-dashboard/references
+curl -fsSL https://raw.githubusercontent.com/TongHuaLabs/metabase-dashboard-skill/main/skills/metabase-dashboard/SKILL.md \
+  -o .claude/skills/metabase-dashboard/SKILL.md
+curl -fsSL https://raw.githubusercontent.com/TongHuaLabs/metabase-dashboard-skill/main/skills/metabase-dashboard/references/design-guide.md \
+  -o .claude/skills/metabase-dashboard/references/design-guide.md
+curl -fsSL https://raw.githubusercontent.com/TongHuaLabs/metabase-dashboard-skill/main/skills/metabase-dashboard/references/sql-patterns.md \
+  -o .claude/skills/metabase-dashboard/references/sql-patterns.md
+```
 
 ## Usage
 
@@ -40,9 +55,10 @@ Or just describe what you want:
 
 ## Files
 
-- `SKILL.md` — Main skill instructions loaded by Claude Code
-- `references/design-guide.md` — Chart type selection, layout rules, KPI best practices
-- `references/sql-patterns.md` — SQL dialect quirks (H2/PostgreSQL/MySQL), filter syntax, JOIN patterns
+- `skills/metabase-dashboard/SKILL.md` — Main skill instructions loaded by Claude Code
+- `skills/metabase-dashboard/references/design-guide.md` — Chart type selection, layout rules, KPI best practices
+- `skills/metabase-dashboard/references/sql-patterns.md` — SQL dialect quirks (H2/PostgreSQL/MySQL), filter syntax, JOIN patterns
+- `.claude-plugin/marketplace.json` — Plugin marketplace metadata
 
 ## License
 
