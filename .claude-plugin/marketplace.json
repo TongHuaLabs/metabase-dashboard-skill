@@ -9,7 +9,7 @@
     {
       "name": "metabase-dashboard",
       "source": "./",
-      "description": "Build fully functional Metabase dashboards end-to-end — schema exploration, design, card creation, layout arrangement, and filter wiring.",
+      "description": "Build fully functional Metabase dashboards end-to-end — schema exploration, design, card creation, layout arrangement, and filter wiring. Requires the metabase-mcp-server MCP server (github.com/CognitionAI/metabase-mcp-server).",
       "license": "MIT",
       "homepage": "https://github.com/TongHuaLabs/metabase-dashboard-skill",
       "repository": "https://github.com/TongHuaLabs/metabase-dashboard-skill",

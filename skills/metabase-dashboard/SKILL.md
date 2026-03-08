@@ -1,6 +1,6 @@
 ---
 name: metabase-dashboard
-description: Build fully functional Metabase dashboards end-to-end — schema exploration, dashboard design with best practices, card/chart creation, layout arrangement, and date/category filter wiring. Use when a user wants to create, design, or implement a dashboard in Metabase, turn database tables into visualizations, or add filters to an existing dashboard. Handles the complete workflow from raw database to polished interactive dashboard.
+description: Build fully functional Metabase dashboards end-to-end — schema exploration, dashboard design with best practices, card/chart creation, layout arrangement, and date/category filter wiring. Use when a user wants to create, design, or implement a dashboard in Metabase, turn database tables into visualizations, or add filters to an existing dashboard. Handles the complete workflow from raw database to polished interactive dashboard. Requires the metabase-mcp-server MCP server (github.com/CognitionAI/metabase-mcp-server) to be configured and connected.
 ---
 
 # Metabase Dashboard Builder
