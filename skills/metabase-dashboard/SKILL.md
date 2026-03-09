@@ -74,11 +74,41 @@ See [design-guide.md](design-guide.md) for chart type selection, layout rules, a
 
 ## Phase 4: Card Implementation
 
+### Pre-flight: Detect dataset_query format
+
+**Before creating any card**, call `get_card` on one existing card in the instance and inspect its `dataset_query` shape. Metabase v0.58+ uses pMBQL internally — passing the old legacy format causes the query to silently save as `{}`, breaking the card entirely.
+
+**Legacy format (DO NOT USE on v0.58+):**
+```json
+{
+  "type": "native",
+  "database": 1,
+  "native": { "query": "SELECT ...", "template-tags": {} }
+}
+```
+
+**pMBQL format (required for v0.58+):**
+```json
+{
+  "lib/type": "mbql/query",
+  "database": 1,
+  "stages": [
+    {
+      "lib/type": "mbql.stage/native",
+      "native": "SELECT ...",
+      "template-tags": {}
+    }
+  ]
+}
+```
+
+Match whatever format the existing card uses. See [sql-patterns.md](sql-patterns.md) for the full pMBQL reference.
+
 ### Creating Cards
 
 For each card:
 1. Write and test SQL with `execute_query`
-2. Create with `create_card(name, dataset_query, display, visualization_settings)`
+2. Create with `create_card(name, dataset_query, display, visualization_settings)` using the correct format detected above
 
 Common `display` values: `scalar`, `bar`, `line`, `pie`, `table`, `row`
 
@@ -114,18 +144,21 @@ Add cards using `add_card_to_dashboard(dashboard_id, card_id, col, row, size_x, 
 
 ### Step 1 — Discover the Field ID
 
-Find the internal Metabase field ID for the column to filter on:
-```sql
--- H2 (Metabase sample DB)
-SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'ORDERS'
-```
-Or inspect via `get_card` on an existing card — result_metadata includes field IDs for used columns.
+**Do not guess or leave the field ID as `null` — this fails validation.**
+
+The correct way to find the integer field ID:
+1. Call `get_card` on any existing card that queries the same table and has been executed (has `result_metadata`)
+2. Look at `dataset_query.stages[0].template-tags.<tag>.dimension` — the integer at position `[2]` is the field ID
+3. Alternatively, check `field_ref` in `result_metadata` of an executed card
+
+Known field IDs for the Metabase Sample Database:
+- `ORDERS.CREATED_AT` → `13`
 
 ### Step 2 — Update Each Card with the Template Tag
 
-Use `update_card` to add `template-tags` to the `dataset_query.native` of every card that needs the filter. Generate one UUID and reuse it across all cards for the same filter variable:
+Use `update_card` to add `template-tags` into the card's `dataset_query` (inside `stages[0]` for pMBQL, or inside `native` for legacy). Generate one UUID and reuse it across all cards for the same filter variable.
 
+**pMBQL format (v0.58+):**
 ```json
 {
   "order_date": {
@@ -133,11 +166,13 @@ Use `update_card` to add `template-tags` to the `dataset_query.native` of every 
     "name": "order_date",
     "display-name": "Order Date",
     "type": "dimension",
-    "dimension": ["field", <field_id>, null],
+    "dimension": ["field", {"base-type": "type/DateTime", "lib/uuid": "<new-uuid>", "effective-type": "type/DateTime"}, 13],
     "widget-type": "date/all-options"
   }
 }
 ```
+
+The third element of `dimension` (`13` above) is the Metabase integer field ID discovered in Step 1. The metadata object at position `[1]` must include `base-type` and `effective-type` matching the column's type.
 
 Only update cards whose SQL contains `[[AND {{order_date}}]]`. Skip unrelated cards (e.g., a People-only card when filtering Orders).
 

@@ -1,14 +1,98 @@
 # SQL Patterns for Metabase
 
 ## Table of Contents
-1. [Identify Your SQL Dialect](#identify-your-sql-dialect)
-2. [Filter Syntax](#filter-syntax)
-3. [Common Metric Patterns](#common-metric-patterns)
-4. [H2 Specific Patterns](#h2-specific-patterns)
-5. [PostgreSQL Patterns](#postgresql-patterns)
-6. [MySQL / MariaDB Patterns](#mysql--mariadb-patterns)
-7. [JOIN Patterns with Filters](#join-patterns-with-filters)
-8. [Common Pitfalls](#common-pitfalls)
+1. [dataset_query Format: pMBQL vs Legacy](#dataset_query-format-pmbql-vs-legacy)
+2. [Identify Your SQL Dialect](#identify-your-sql-dialect)
+3. [Filter Syntax](#filter-syntax)
+4. [Common Metric Patterns](#common-metric-patterns)
+5. [H2 Specific Patterns](#h2-specific-patterns)
+6. [PostgreSQL Patterns](#postgresql-patterns)
+7. [MySQL / MariaDB Patterns](#mysql--mariadb-patterns)
+8. [JOIN Patterns with Filters](#join-patterns-with-filters)
+9. [Common Pitfalls](#common-pitfalls)
+
+---
+
+## dataset_query Format: pMBQL vs Legacy
+
+Metabase v0.58+ uses **pMBQL** internally. Passing the old legacy format to `create_card` or `update_card` causes the query to silently save as `{}`, breaking the card with no error.
+
+### How to detect which format to use
+
+Before creating any card, call `get_card` on one existing card and inspect its `dataset_query`:
+
+- If it has a `"stages"` key → **pMBQL** (v0.58+)
+- If it has a `"native"` key at the top level → **legacy**
+
+Always match the format of the existing cards in the instance.
+
+### Legacy format (pre-v0.58)
+
+```json
+{
+  "type": "native",
+  "database": 1,
+  "native": {
+    "query": "SELECT COUNT(*) FROM ORDERS",
+    "template-tags": {}
+  }
+}
+```
+
+### pMBQL format (v0.58+)
+
+```json
+{
+  "lib/type": "mbql/query",
+  "database": 1,
+  "stages": [
+    {
+      "lib/type": "mbql.stage/native",
+      "native": "SELECT COUNT(*) FROM ORDERS",
+      "template-tags": {}
+    }
+  ]
+}
+```
+
+### pMBQL with a filter template-tag
+
+```json
+{
+  "lib/type": "mbql/query",
+  "database": 1,
+  "stages": [
+    {
+      "lib/type": "mbql.stage/native",
+      "native": "SELECT COUNT(*) FROM ORDERS WHERE 1=1 [[AND {{order_date}}]]",
+      "template-tags": {
+        "order_date": {
+          "id": "<uuid>",
+          "name": "order_date",
+          "display-name": "Order Date",
+          "type": "dimension",
+          "dimension": ["field", {"base-type": "type/DateTime", "lib/uuid": "<new-uuid>", "effective-type": "type/DateTime"}, 13],
+          "widget-type": "date/all-options"
+        }
+      }
+    }
+  ]
+}
+```
+
+### Finding the integer field ID for template-tag dimension
+
+The third element of `dimension` (e.g. `13`) is Metabase's internal integer field ID — **not** a SQL column ID. It must be real; `null` fails validation.
+
+To find it:
+1. Call `get_card` on any card that queries the same table and has been executed (has `result_metadata`)
+2. Check `dataset_query.stages[0].template-tags.<tag>.dimension[2]` for the field ID
+3. Or check `field_ref` in `result_metadata` of an executed card
+
+Known field IDs for the Metabase Sample Database:
+| Table | Column | Field ID |
+|---|---|---|
+| ORDERS | CREATED_AT | 13 |
 
 ---
 
@@ -322,6 +406,8 @@ LIMIT 20
 
 | Pitfall | Symptom | Fix |
 |---|---|---|
+| Using legacy `dataset_query` format on v0.58+ | Card saves with `{}` query, silently broken | Call `get_card` on existing card first, use pMBQL format if `stages` key present |
+| `null` field ID in template-tag dimension | Validation error on card create/update | Discover real integer field ID from `get_card` result_metadata, never use `null` |
 | Integer division | Rate returns 0 | `CAST(numerator AS FLOAT)` before dividing |
 | Reserved word alias | SQL parse error | Rename alias (e.g., `month` → `order_month`) |
 | Missing `WHERE 1=1` | Filter clause syntax error | Always prefix optional filter with `WHERE 1=1` |
